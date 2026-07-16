@@ -1586,13 +1586,32 @@ function bindTab() {
 async function syncToSupabase() {
   if (!STATE.user || !STATE.user.email) return;
   try {
+    // Preserve any "notified" flags the server has already set, so a normal
+    // save (typing, ticking a habit, etc.) doesn't silently wipe them out
+    // and cause a task reminder to fire twice.
+    let tasksToSave = STATE.tasks;
+    try {
+      const { data: existing } = await _supabase
+        .from('user_data')
+        .select('tasks')
+        .eq('email', STATE.user.email)
+        .single();
+      if (existing && existing.tasks) {
+        const remoteTasks = JSON.parse(existing.tasks || '[]');
+        tasksToSave = STATE.tasks.map(t => {
+          const match = remoteTasks.find(rt => rt.val === t.val && rt.time === t.time);
+          return match && match.notified ? { ...t, notified: true } : t;
+        });
+      }
+    } catch(e) { /* if this lookup fails, just save normally below */ }
+ 
     const { error } = await _supabase
       .from('user_data')
       .upsert({
         email: STATE.user.email,
         name: STATE.user.name,
         plan: STATE.user.plan || 'free',
-        tasks: JSON.stringify(STATE.tasks),
+        tasks: JSON.stringify(tasksToSave),
         habits: JSON.stringify(STATE.habits),
         habit_done: JSON.stringify(STATE.habitDone),
         streak: STATE.streak,
@@ -1604,9 +1623,8 @@ async function syncToSupabase() {
       }, { onConflict: 'email' });
     if (error) console.log('Sync error:', error.message);
   } catch(e) { console.log('Supabase error:', e); }
-}
-
-async function loadFromSupabase(email) {
+  }
+  async function loadFromSupabase(email) {
   try {
     const { data, error } = await _supabase
       .from('user_data')
