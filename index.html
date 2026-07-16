@@ -1104,7 +1104,14 @@ function updateMissedPlan(i, v) {
   STATE.missedPlans = STATE.missedPlans || [];
   STATE.missedPlans[i] = v;
   clearTimeout(_missedPlanDebounce);
-  _missedPlanDebounce = setTimeout(() => { save(); }, 500);
+  _missedPlanDebounce = setTimeout(() => {
+    save();
+    // Auto-clear the missed-day box once they've actually written a real reason
+    if (v && v.trim().length > 2) {
+      STATE.showRollover = false;
+      render();
+    }
+  }, 900);
 }
 function setMode(m) { STATE.mode = m; render(); }
 function lockIn() { STATE.locked = true; save(); render(); }
