@@ -1698,7 +1698,30 @@ async function savePushSubscription(subscription) {
   } catch(e) { console.log('Failed to save subscription:', e.message); }
 }
 
-function requestNotifPermission() {
+// Silently checks (and if needed, refreshes) the push subscription every
+// time the app opens — no alerts, no user action needed. This is what
+// fixes subscriptions quietly going stale over time.
+async function silentPushRefresh() {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY_CLIENT)
+      });
+    }
+    // Re-save every time — cheap, and keeps the server copy in sync
+    // even if the subscription quietly rotated under the hood.
+    await savePushSubscription(sub);
+  } catch(e) {
+    console.log('Silent push refresh failed:', e.message);
+  }
+}
+  
+  function requestNotifPermission() {
   if (typeof Notification === 'undefined') {
     alert("Notifications not supported. Make sure you opened this from your Home Screen icon, not Safari browser.");
     return;
