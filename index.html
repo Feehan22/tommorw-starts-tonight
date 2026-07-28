@@ -1793,7 +1793,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 checkDayRollover();
-
+silentPushRefresh();
 // Auto-restore from Supabase if local storage was wiped
 // but we have a previously stored email hint
 (async () => {
