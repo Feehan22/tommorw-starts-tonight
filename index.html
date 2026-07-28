@@ -642,7 +642,7 @@ function lpSubmit2() {
   save();
   setTimeout(() => { render(); }, 500);
 }
-function lpSubmit() {
+async function lpSubmit() {
   try {
     const nameEl = document.getElementById('lpName');
     const emailEl = document.getElementById('lpEmail');
@@ -650,25 +650,35 @@ function lpSubmit() {
     const email = (emailEl ? emailEl.value : '').trim();
     if (!name || name.length < 2) { alert('Please enter your first name'); return; }
     if (!email || !email.includes('@')) { alert('Please enter a valid email address'); return; }
-    if (!STATE.user) STATE.user = {};
-    STATE.user.name = name;
-    STATE.user.email = email;
-    STATE.user.plan = 'free';
-    STATE.onboardStep = 5;
-    localStorage.setItem('tst_user', JSON.stringify(STATE.user));
+
+    // Stash the name so we can use it once they click the link and return
+    localStorage.setItem('tst_pending_name', name);
+    localStorage.setItem('tst_pending_email', email);
+
+    const btn = document.getElementById('lpCtaBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending link...'; }
+
+    const sent = await sendMagicLink(email);
+
+    if (!sent) {
+      alert('Something went wrong sending your link. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Make my promise →'; }
+      return;
+    }
+
     const fs = document.getElementById('lpFormState');
     const ss = document.getElementById('lpSuccess');
     const sn = document.getElementById('lpSuccessName');
     if (fs) fs.style.display = 'none';
     if (ss) ss.style.display = 'block';
-    if (sn) sn.textContent = name + ", you're in.";
-    setTimeout(() => { render(); }, 2000);
+    if (sn) sn.textContent = "Check your email";
+    const ssub = document.querySelector('.lp-ssub');
+    if (ssub) ssub.innerHTML = `We've sent a sign-in link to <b>${email}</b>.<br/>Click it to get started.`;
   } catch(e) {
     console.error('lpSubmit error:', e);
     alert('Something went wrong. Please try again.');
   }
 }
-
 // ── VERSION CHECK ──
 // Note: this no longer wipes storage on version bumps. It only stamps
 // the current version so we can do targeted migrations in future if needed.
