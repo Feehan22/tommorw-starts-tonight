@@ -1589,7 +1589,39 @@ function bindTab() {
 }
 
 
-// ── SUPABASE SYNC ──
+// ── MAGIC LINK AUTH (foundation) ──
+// Sends a real sign-in link to someone's email via Supabase's built-in auth.
+// No passwords involved — clicking the link IS the proof it's really them.
+async function sendMagicLink(email) {
+  try {
+    const { error } = await _supabase.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if (error) {
+      console.log('Magic link error:', error.message);
+      return false;
+    }
+    return true;
+  } catch(e) {
+    console.log('Magic link send failed:', e.message);
+    return false;
+  }
+}
+
+// Checks, on every page load, whether someone has a valid verified session
+// (e.g. they just clicked their magic link). Returns the verified email,
+// or null if nobody's currently signed in via real auth yet.
+async function getVerifiedEmail() {
+  try {
+    const { data: { session } } = await _supabase.auth.getSession();
+    return session?.user?.email || null;
+  } catch(e) {
+    return null;
+  }
+}
+  
+  // ── SUPABASE SYNC ──
 async function syncToSupabase() {
   if (!STATE.user || !STATE.user.email) return;
   try {
