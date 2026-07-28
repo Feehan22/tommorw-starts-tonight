@@ -1859,9 +1859,25 @@ if ('serviceWorker' in navigator) {
 }
 checkDayRollover();
 silentPushRefresh();
-// Auto-restore from Supabase if local storage was wiped
-// but we have a previously stored email hint
 (async () => {
+  // First: check if they just clicked a magic link (real verified session)
+  const verifiedEmail = await getVerifiedEmail();
+  if (verifiedEmail && !STATE.user) {
+    const pendingName = localStorage.getItem('tst_pending_name');
+    const restored = await loadFromSupabase(verifiedEmail);
+    if (restored) {
+      STATE.onboardStep = 6;
+    } else {
+      // Brand new verified user — start onboarding with their pending name
+      STATE.user = { name: pendingName || 'Friend', email: verifiedEmail, plan: 'free' };
+      STATE.onboardStep = 1;
+    }
+    localStorage.removeItem('tst_pending_name');
+    localStorage.removeItem('tst_pending_email');
+    save();
+  }
+
+  // Fallback: existing local-storage-based restore for already-logged-in devices
   const lastEmail = localStorage.getItem('tst_last_email');
   if (!STATE.user && lastEmail) {
     const restored = await loadFromSupabase(lastEmail);
