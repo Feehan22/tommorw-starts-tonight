@@ -1725,8 +1725,7 @@ async function savePushSubscription(subscription) {
   const email = STATE.user?.email || localStorage.getItem('tst_last_email');
   if (!email) { console.log('No email found for push subscription'); return; }
   try {
-    const res = await fetch(`https://nyumfsrwrfnasvkgjulv.supabase.co/rest/v1/push_subscriptions`, {
-      method: 'POST',
+    const res = await fetch(`https://nyumfsrwrfnasvkgjulv.supabase.co/rest/v1/push_subscriptions?on_conflict=email`, {      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8',
