@@ -624,7 +624,20 @@ async function restoreAccount() {
   }
 }
 
-function lpCheckForm2() {
+async function restoreAccountSecure() {
+  const email = document.getElementById('restoreEmail')?.value.trim();
+  const msg = document.getElementById('restoreMsg');
+  if (!email || !email.includes('@')) {
+    if (msg) msg.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  if (msg) msg.textContent = 'Sending your sign-in link...';
+  const sent = await sendMagicLink(email);
+  if (msg) msg.textContent = sent
+    ? '✓ Check your email and click the link to sign in.'
+    : 'Something went wrong. Please try again.';
+}
+  function lpCheckForm2() {
   const n = document.getElementById('lpName2')?.value.trim();
   const e = document.getElementById('lpEmail2')?.value.trim();
   const btn = document.getElementById('lpCtaBtn2');
