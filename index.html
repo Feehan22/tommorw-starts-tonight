@@ -808,10 +808,10 @@ function checkDayRollover() {
     // Snapshot of what "today" looked like before we move to a new day
     const prevTodayTasks = STATE.todayTasks || [];
     const completedCount = prevTodayTasks.filter(t => t.done && t.val && t.val.trim()).length;
-    if (completedCount > 0) {
+        if (completedCount > 0) {
       STATE.completedDays.add(yesterday.toDateString());
-      STATE.streak = STATE.completedDays.size;
     }
+    STATE.streak = calcStreak();
     STATE.missedTasks = prevTodayTasks.filter(t => !t.done && t.val && t.val.trim()).map(t => t.val);
     STATE.showRollover = STATE.missedTasks.length > 0;
 
