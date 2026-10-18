@@ -844,7 +844,18 @@ function checkDayRollover() {
   }
 }
 
-function fmt12(t) {
+function calcStreak() {
+  let count = 0;
+  const d = new Date();
+  if (!STATE.completedDays.has(d.toDateString())) d.setDate(d.getDate() - 1);
+  while (STATE.completedDays.has(d.toDateString())) {
+    count++;
+    d.setDate(d.getDate() - 1);
+  }
+  return count;
+}
+  
+  function fmt12(t) {
   if (!t) return '';
   const [h, m] = t.split(':').map(Number);
   return `${(h % 12) || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
