@@ -1288,7 +1288,7 @@ function cancelGoalForm() { STATE.showGoalForm=false; document.getElementById('m
 function pickGoalColor(c, used) { if(used)return; STATE.goalSelColor=c; document.getElementById('mainContent').innerHTML=renderTab(); bindTab(); }
 function removeGoal(i) { STATE.goals.splice(i,1); save(); document.getElementById('mainContent').innerHTML=renderTab(); bindTab(); }
 function changeMonth(d) { STATE.viewMonth=new Date(STATE.viewMonth.getFullYear(),STATE.viewMonth.getMonth()+d,1); document.getElementById('mainContent').innerHTML=renderTab(); bindTab(); }
-function toggleDay(ds,fut) { if(fut)return; STATE.completedDays.has(ds)?STATE.completedDays.delete(ds):STATE.completedDays.add(ds); STATE.streak=STATE.completedDays.size; save(); render(); }
+function toggleDay(ds,fut) { if(fut)return; STATE.completedDays.has(ds)?STATE.completedDays.delete(ds):STATE.completedDays.add(ds); STATE.streak=calcStreak(); save(); render(); }
 
 function addGoal() {
   const n=document.getElementById('gName')?.value.trim();
