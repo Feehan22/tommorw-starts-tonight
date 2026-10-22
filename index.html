@@ -1417,7 +1417,7 @@ function renderUpgrade() {
         ${p.isPaid?`<a class="btn-primary" style="margin-top:1rem;display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="${p.name==='Annual'?'https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00':'https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01'}">Get ${p.name} →</a>`:'<button class="btn-ghost" style="margin-top:1rem;opacity:.5;cursor:default">Current plan</button>'}
       </div>`).join('')}
     <p class="hint" style="margin-top:.5rem">Secure payment via Stripe · Cancel anytime · 7-day refund guarantee</p>
-    <p class="hint" style="margin-top:1.5rem;border-top:1px solid var(--border3);padding-top:1rem">Already paid before today? (one-time fix)
+    <p class="hint" style="display:none;margin-top:1.5rem;border-top:1px solid var(--border3);padding-top:1rem">Already paid before today? (one-time fix)
       <span onclick="markAsPaid('monthly')" style="color:var(--green-text);cursor:pointer;text-decoration:underline">Monthly</span> ·
       <span onclick="markAsPaid('annual')" style="color:var(--green-text);cursor:pointer;text-decoration:underline">Annual</span>
     </p>
