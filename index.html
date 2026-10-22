@@ -781,7 +781,23 @@ const NOTIF_PREVIEWS = [
 ];
 
 // ── HELPERS ──
+function stampTaskDates() {
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  STATE.tasks.forEach(t => {
+    if (t.val && t.val.trim()) { if (!t.forDate) t.forDate = fmt(tomorrow); }
+    else { delete t.forDate; }
+  });
+  STATE.todayTasks.forEach(t => {
+    if (t.val && t.val.trim()) { if (!t.forDate) t.forDate = fmt(now); }
+    else { delete t.forDate; }
+  });
+}
+
 function save() {
+  stampTaskDates();
   localStorage.setItem('tst_user', JSON.stringify(STATE.user));
   localStorage.setItem('tst_tasks', JSON.stringify(STATE.tasks));
   localStorage.setItem('tst_habits', JSON.stringify(STATE.habits));
