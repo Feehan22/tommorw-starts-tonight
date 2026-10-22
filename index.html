@@ -847,7 +847,7 @@ function checkDayRollover() {
     // Move last night's "Tonight" plan into Today's tasks
     const planned = STATE.tasks.filter(t => t.val && t.val.trim());
     if (planned.length > 0) {
-      STATE.todayTasks = STATE.tasks.map(t => ({ val: t.val, done: false, time: t.time || '', hasTime: t.hasTime || null }));
+      STATE.todayTasks = STATE.tasks.map(t => ({ val: t.val, done: false, time: t.time || '', hasTime: t.hasTime || null, forDate: t.forDate }));
     } else {
       STATE.todayTasks = [{val:'',done:false},{val:'',done:false},{val:'',done:false}];
     }
