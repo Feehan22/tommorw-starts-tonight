@@ -1,11 +1,11 @@
 // api/send-notifications.js
 // Vercel serverless function — called by cron job every minute
-// Sends Web Push notifications for task reminders, evening nudge, re-engagement
 //
-// v4 UPDATE: now checks BOTH "tasks" (tonight's plan) and "today_tasks"
-// (what's actually live for today) for timed reminders — since opening the
-// app moves a task from one to the other. Both use the same "notified"
-// flag tracking so nothing fires twice.
+// v5: every task now carries a "forDate" (the day it is meant for). The
+// server only sends a task reminder when forDate is TODAY in the user's
+// timezone, so reminders never fire on the wrong day and expire on their
+// own once the day is over. Tasks saved before this change have no
+// forDate and keep the old behaviour until the app re-saves them.
 
 const webpush = require('web-push');
 
@@ -68,9 +68,19 @@ function getLocalTime(date, timezone) {
   }
 }
 
+// Today's date as YYYY-MM-DD in the user's timezone (en-CA prints it that way)
+function getLocalDate(date, timezone) {
+  try {
+    return date.toLocaleDateString('en-CA', { timeZone: timezone || 'Europe/London' });
+  } catch (e) {
+    return date.toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+  }
+}
+
 // Checks one list of tasks (either "tasks" or "today_tasks") for anything
-// due right now, sends it, marks it notified, and reports if anything changed.
-async function checkTaskList(rawJson, currentTime, subscription, email, results) {
+// due right now ON THE RIGHT DAY, sends it, marks it notified, and reports
+// if anything changed.
+async function checkTaskList(rawJson, currentTime, todayStr, subscription, email, results) {
   let sent = 0;
   try {
     const list = JSON.parse(rawJson || '[]');
@@ -83,7 +93,8 @@ async function checkTaskList(rawJson, currentTime, subscription, email, results)
         task.val.trim() &&
         !task.done &&
         !task.notified &&
-        task.time === currentTime
+        task.time === currentTime &&
+        (!task.forDate || task.forDate === todayStr)
       ) {
         const status = await sendPush(
           subscription,
@@ -130,29 +141,30 @@ export default async function handler(req, res) {
       if (!user) continue;
 
       const currentTime = getLocalTime(now, user.timezone);
+      const todayStr = getLocalDate(now, user.timezone);
 
       // ── Check "Tonight" plan ──
-      const tonightResult = await checkTaskList(user.tasks, currentTime, sub.subscription, sub.email, results);
+      const tonightResult = await checkTaskList(user.tasks, currentTime, todayStr, sub.subscription, sub.email, results);
       sent += tonightResult.sent;
       if (tonightResult.changed) {
         await supabaseUpdateColumn(user.email, 'tasks', tonightResult.list);
       }
 
       // ── Check "Today" live list ──
-      const todayResult = await checkTaskList(user.today_tasks, currentTime, sub.subscription, sub.email, results);
+      const todayResult = await checkTaskList(user.today_tasks, currentTime, todayStr, sub.subscription, sub.email, results);
       sent += todayResult.sent;
       if (todayResult.changed) {
         await supabaseUpdateColumn(user.email, 'today_tasks', todayResult.list);
       }
 
-      // ── 9pm evening nudge (unchanged — meant to repeat daily for everyone) ──
+      // ── 9pm evening nudge (meant to repeat daily for everyone) ──
       if (currentTime === '21:00') {
         const status = await sendPush(sub.subscription, 'Tomorrow starts tonight 🌙', "Set your Top 3 for tomorrow before bed. 60 seconds. Make it count.");
         results.push({ email: sub.email, type: 'evening_nudge', status });
         if (status < 300) sent++;
       }
 
-      // ── 2-day re-engagement (unchanged) ──
+      // ── 2-day re-engagement ──
       try {
         const lastDate = user.last_date;
         if (lastDate) {
