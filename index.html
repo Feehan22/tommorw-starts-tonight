@@ -1689,14 +1689,14 @@ async function syncToSupabase() {
       if (existing && existing.tasks) {
         const remoteTasks = JSON.parse(existing.tasks || '[]');
         tasksToSave = STATE.tasks.map(t => {
-          const match = remoteTasks.find(rt => rt.val === t.val && rt.time === t.time);
+          const match = remoteTasks.find(rt => rt.val === t.val && rt.time === t.time && rt.forDate === t.forDate);
           return match && match.notified ? { ...t, notified: true } : t;
         });
       }
       if (existing && existing.today_tasks) {
         const remoteToday = JSON.parse(existing.today_tasks || '[]');
         todayTasksToSave = STATE.todayTasks.map(t => {
-          const match = remoteToday.find(rt => rt.val === t.val && rt.time === t.time);
+          const match = remoteToday.find(rt => rt.val === t.val && rt.time === t.time && rt.forDate === t.forDate);
           return match && match.notified ? { ...t, notified: true } : t;
         });
       }
