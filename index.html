@@ -873,7 +873,51 @@ function checkDayRollover() {
   }
 }
 
-// How many free-trial days are left (null until the start date has loaded)
+function renderTrialBanner() {
+  const isPaid = STATE.user && STATE.user.plan && STATE.user.plan !== 'free';
+  if (isPaid) return '';
+  const left = trialDaysLeft();
+  if (left === null || left <= 0) return '';
+  const urgent = left <= 2;
+  return `
+    <div style="background:${urgent ? 'var(--amber-bg)' : 'var(--bg2)'};border:1px solid ${urgent ? 'var(--amber)' : 'var(--border)'};border-radius:var(--r);padding:.85rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">⏳</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">Free trial: ${left} day${left === 1 ? '' : 's'} left</div>
+        <div style="font-size:12px;color:var(--text3)">${urgent ? 'Upgrade to keep your plan, streak and reminders.' : 'Enjoying it? You can upgrade any time.'}</div>
+      </div>
+      <button onclick="setTab('upgrade')" style="background:var(--text);color:var(--bg);border:none;border-radius:var(--rsm);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap">Upgrade</button>
+    </div>
+  `;
+}
+
+function renderTrialEnded() {
+  return `
+    <div class="content" style="padding:1.5rem 1.2rem">
+      <div style="text-align:center;padding:1rem 0 1.5rem">
+        <div style="font-size:40px;margin-bottom:8px">⏳</div>
+        <div style="font-family:var(--serif);font-size:26px;margin-bottom:6px">Your free trial has ended</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.5">Your tasks, habits and streak are saved. Pick a plan to carry on right where you left off.</div>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Best value</div>
+        <div class="pricing-tier">Annual</div>
+        <div class="pricing-price">£39.99<small> / year</small></div>
+        <div class="pricing-desc">Less than £3.50 a month. Everything unlocked.</div>
+        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00">Get Annual →</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-tier">Monthly</div>
+        <div class="pricing-price">£4.99<small> / month</small></div>
+        <div class="pricing-desc">Full access. Cancel any time.</div>
+        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01">Get Monthly</a>
+      </div>
+      <p class="hint" style="margin-top:.75rem">Pay with the same email you signed up with${STATE.user && STATE.user.email ? ' (' + STATE.user.email + ')' : ''}, so we can unlock your account.</p>
+    </div>
+  `;
+}
+  
+  // How many free-trial days are left (null until the start date has loaded)
 function trialDaysLeft() {
   if (!STATE.trialStart) return null;
   const used = Math.floor((new Date() - new Date(STATE.trialStart)) / 86400000);
