@@ -873,7 +873,22 @@ function checkDayRollover() {
   }
 }
 
-function calcStreak() {
+// How many free-trial days are left (null until the start date has loaded)
+function trialDaysLeft() {
+  if (!STATE.trialStart) return null;
+  const used = Math.floor((new Date() - new Date(STATE.trialStart)) / 86400000);
+  return Math.max(0, 5 - used);
+}
+
+// True only for free accounts whose 5 days are up
+function isTrialExpired() {
+  const isPaid = STATE.user && STATE.user.plan && STATE.user.plan !== 'free';
+  if (isPaid) return false;
+  const left = trialDaysLeft();
+  return left !== null && left <= 0;
+}
+  
+  function calcStreak() {
   let count = 0;
   const d = new Date();
   if (!STATE.completedDays.has(d.toDateString())) d.setDate(d.getDate() - 1);
