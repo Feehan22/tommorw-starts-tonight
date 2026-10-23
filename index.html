@@ -1142,6 +1142,7 @@ function renderHome() {
       <div style="font-family:var(--serif);font-size:22px;margin-bottom:2px">${greeting}, ${STATE.user.name}</div>
       <div style="font-size:13px;color:var(--text3)">${dateStr} · <span id="liveClock"></span></div>
     </div>
+    ${renderTrialBanner()}
     ${notifBanner}
     <div class="mode-toggle">
       <button class="mode-btn${active==='today'?' active':''}" onclick="setMode('today')">📋 Today</button>
