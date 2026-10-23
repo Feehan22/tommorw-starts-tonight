@@ -986,6 +986,12 @@ function render() {
     app.innerHTML = renderOnboarding();
     return;
   }
+    // Free trial finished: show the "trial ended" screen instead of the app
+  if (isTrialExpired()) {
+    app.innerHTML = renderTrialEnded();
+    return;
+  }
+  
   // Migrate any old mode values to the new three-tab system
   if (STATE.mode === 'evening') STATE.mode = 'tonight';
   if (STATE.mode === 'morning') STATE.mode = 'today';
