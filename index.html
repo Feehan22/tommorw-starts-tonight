@@ -1925,16 +1925,23 @@ silentPushRefresh();
   }
   render();
 })();
-// If returning user, check Supabase for plan updates (e.g. after paying via Stripe)
+// If returning user, check Supabase for plan and trial start date
 if (STATE.user && STATE.user.email) {
   (async () => {
     try {
-      const { data } = await _supabase.from('user_data').select('plan').eq('email', STATE.user.email).single();
-      if (data && data.plan && data.plan !== STATE.user.plan) {
+      const { data } = await _supabase.from('user_data').select('plan, trial_start').eq('email', STATE.user.email).single();
+      if (!data) return;
+      let changed = false;
+      if (data.plan && data.plan !== STATE.user.plan) {
         STATE.user.plan = data.plan;
         localStorage.setItem('tst_user', JSON.stringify(STATE.user));
-        render();
+        changed = true;
       }
+      if (data.trial_start && data.trial_start !== STATE.trialStart) {
+        STATE.trialStart = data.trial_start;
+        changed = true;
+      }
+      if (changed) render();
     } catch(e) {}
   })();
 }
