@@ -1717,6 +1717,7 @@ async function syncToSupabase() {
         goals: JSON.stringify(STATE.goals),
         toggles: JSON.stringify(STATE.toggles),
         last_date: STATE.lastDate,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         updated_at: new Date().toISOString()
       }, { onConflict: 'email' });
     if (error) console.log('Sync error:', error.message);
