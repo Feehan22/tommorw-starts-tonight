@@ -6,6 +6,9 @@
 // timezone, so reminders never fire on the wrong day and expire on their
 // own once the day is over. Tasks saved before this change have no
 // forDate and keep the old behaviour until the app re-saves them.
+//
+// v6: free accounts whose 5-day trial has ended get no pushes at all (no task
+// reminders, no 9pm nudge, no re-engagement). Paid accounts are never affected.
 
 const webpush = require('web-push');
 
@@ -77,6 +80,16 @@ function getLocalDate(date, timezone) {
   }
 }
 
+// True only for a FREE account whose 5-day trial is over. Same maths as the app.
+// If there is no start date, we treat the account as NOT expired (fail open).
+function isExpiredFree(user, now) {
+  const isPaid = user.plan && user.plan !== 'free';
+  if (isPaid) return false;
+  if (!user.trial_start) return false;
+  const used = Math.floor((now - new Date(user.trial_start)) / 86400000);
+  return used >= 5;
+}
+
 // Checks one list of tasks (either "tasks" or "today_tasks") for anything
 // due right now ON THE RIGHT DAY, sends it, marks it notified, and reports
 // if anything changed.
@@ -131,7 +144,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    const users = await supabaseGet('user_data?select=email,tasks,today_tasks,last_date,timezone');
+    const users = await supabaseGet('user_data?select=email,tasks,today_tasks,last_date,timezone,plan,trial_start');
+    if (!Array.isArray(users)) throw new Error('Could not load user data');
 
     let sent = 0;
     const results = [];
@@ -139,6 +153,9 @@ export default async function handler(req, res) {
     for (const sub of subs) {
       const user = users.find(u => u.email === sub.email);
       if (!user) continue;
+
+      // Free trial over: send this account nothing
+      if (isExpiredFree(user, now)) continue;
 
       const currentTime = getLocalTime(now, user.timezone);
       const todayStr = getLocalDate(now, user.timezone);
@@ -178,7 +195,8 @@ export default async function handler(req, res) {
       } catch(e) {}
     }
 
-    res.status(200).json({ sent, time: now.toISOString(), results });
+    const expiredFree = users.filter(u => isExpiredFree(u, now)).length;
+    res.status(200).json({ sent, time: now.toISOString(), expiredFree, results });
   } catch(e) {
     console.error('Handler error:', e);
     res.status(500).json({ error: e.message });
