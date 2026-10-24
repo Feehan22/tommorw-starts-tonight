@@ -1829,6 +1829,7 @@ try {
     STATE.goals = JSON.parse(data.goals || '[]') || STATE.goals;
     STATE.toggles = JSON.parse(data.toggles || '[true,true,true,true]');
     STATE.lastDate = data.last_date || new Date().toDateString();
+    STATE.trialStart = data.trial_start || STATE.trialStart;
     save();
     return true;
   } catch(e) { console.log('Load error:', e); return false; }
