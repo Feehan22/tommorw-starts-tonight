@@ -1483,7 +1483,7 @@ function removeHabit(i){STATE.habits.splice(i,1);save();document.getElementById(
 // ── UPGRADE ──
 function renderUpgrade() {
   const plans = [
-    {name:'Free',price:'£0',desc:'Get started. No card needed. See if the system works for you.',features:['Top 3 daily tasks','3 habits max','Basic streak counter'],limits:['No auto-rollover — manual only','No goal calendar','No time reminders','No weekly scores','No push reminders'],isPaid:false,featured:false},
+        {name:'5-day free trial',price:'£0',desc:'Try everything free for 5 days. No card needed. Then pick a plan to carry on.',features:['Top 3 daily tasks','Habits and streak','Push reminders','Everything unlocked'],limits:[],isPaid:false,featured:false},
     {name:'Annual',price:'£39.99',priceNote:'per year',desc:'Less than £3.50 a month. Everything unlocked. Save 30% vs monthly.',features:['Auto-rollover — resets itself every night','Up to 5 habits','Goal calendar with 3 goals','Task time reminders','Weekly scores & stats','Push reminders & nudges','Streak shield — one free pass per week'],limits:[],isPaid:true,featured:true},
     {name:'Monthly',price:'£4.99',priceNote:'per month',desc:'Full access. Cancel any time. No commitment needed.',features:['Auto-rollover — resets itself every night','Up to 5 habits','Goal calendar with 3 goals','Task time reminders','Weekly scores & stats','Push reminders & nudges','Streak shield — one free pass per week'],limits:[],isPaid:true,featured:false},
   ];
