@@ -2001,6 +2001,7 @@ silentPushRefresh();
       // Brand new verified user — start onboarding with their pending name
       STATE.user = { name: pendingName || 'Friend', email: verifiedEmail, plan: 'free' };
       STATE.onboardStep = 1;
+      STATE.trialStart = new Date().toISOString();
     }
     localStorage.removeItem('tst_pending_name');
     localStorage.removeItem('tst_pending_email');
