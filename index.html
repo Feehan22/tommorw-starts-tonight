@@ -2015,6 +2015,18 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+// Tag every Stripe payment link with the signed-in email, so the payment is matched
+// to the right account even if they pay with Apple Pay (which uses their Apple email).
+document.addEventListener('click', function(ev){
+  try {
+    const a = ev.target.closest && ev.target.closest('a[href^="https://buy.stripe.com/"]');
+    const email = STATE.user && STATE.user.email ? String(STATE.user.email).trim().toLowerCase() : '';
+    if (!a || !email) return;
+    const base = a.getAttribute('href').split('?')[0];
+    const ref = btoa(unescape(encodeURIComponent(email))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    a.setAttribute('href', base + '?client_reference_id=' + ref + '&prefilled_email=' + encodeURIComponent(email));
+  } catch(e) {}
+}, true);
 checkDayRollover();
 silentPushRefresh();
 (async () => {
