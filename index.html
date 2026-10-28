@@ -467,6 +467,7 @@ function renderLanding() {
             <button onclick="restoreAccountSecure()" style="background:var(--green-bg);color:var(--green-text);border:1px solid var(--green);border-radius:var(--rsm);padding:12px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap">Restore</button>
           </div>
           <div id="restoreMsg" style="font-size:12px;margin-top:6px;color:var(--text3)"></div>
+          <div id="restoreCodeArea"></div>
         </div>
       </div>
       <div class="lp-success" id="lpSuccess">
@@ -623,29 +624,6 @@ function lpCheckForm() {
   const btn = document.getElementById('lpCtaBtn');
   if (btn) btn.disabled = !(n && n.length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
-async function restoreAccount() {
-  const email = document.getElementById('restoreEmail')?.value.trim();
-  const msg = document.getElementById('restoreMsg');
-  if (!email || !email.includes('@')) {
-    if (msg) msg.textContent = 'Please enter a valid email address.';
-    return;
-  }
-  if (msg) msg.textContent = 'Looking up your account...';
-  try {
-    const restored = await loadFromSupabase(email);
-    if (restored) {
-      STATE.onboardStep = 6;
-      save();
-      if (msg) msg.textContent = '✓ Account restored!';
-      setTimeout(() => { render(); }, 800);
-    } else {
-      if (msg) msg.textContent = "No account found for that email. Try signing up above.";
-    }
-  } catch(e) {
-    if (msg) msg.textContent = 'Something went wrong. Please try again.';
-  }
-}
-
 async function restoreAccountSecure() {
   const email = document.getElementById('restoreEmail')?.value.trim();
   const msg = document.getElementById('restoreMsg');
@@ -656,8 +634,13 @@ async function restoreAccountSecure() {
   if (msg) msg.textContent = 'Sending your sign-in link...';
   const sent = await sendMagicLink(email);
   if (msg) msg.textContent = sent
-    ? '✓ Check your email and click the link to sign in.'
+    ? '✓ Check your email and click the link, or type the code below.'
     : 'Something went wrong. Please try again.';
+  if (sent) {
+    window._signInEmail = email;
+    const area = document.getElementById('restoreCodeArea');
+    if (area) area.innerHTML = codeBoxHtml('rs');
+  }
 }
   function lpCheckForm2() {
   const n = document.getElementById('lpName2')?.value.trim();
@@ -708,7 +691,9 @@ async function lpSubmit() {
     if (ss) ss.style.display = 'block';
     if (sn) sn.textContent = "Check your email";
     const ssub = document.querySelector('.lp-ssub');
-    if (ssub) ssub.innerHTML = `We've sent a sign-in link to <b>${email}</b>.<br/>Click it to get started.`;
+    if (ssub) ssub.innerHTML = `We've sent a sign-in link to <b>${escHtml(email)}</b>.<br/>Click it, or type the code below.`;
+    window._signInEmail = email;
+    if (ss && !document.getElementById('lsCode')) ss.insertAdjacentHTML('beforeend', codeBoxHtml('ls'));
   } catch(e) {
     console.error('lpSubmit error:', e);
     alert('Something went wrong. Please try again.');
@@ -975,10 +960,21 @@ function daysLeft(dateStr) {
   return Math.max(0, Math.ceil((new Date(dateStr) - today) / 86400000));
 }
 
+let _authChecked = false;
 function render() {
   const app = document.getElementById('app');
   if (!STATE.user) {
     app.innerHTML = renderLanding();
+    return;
+  }
+  // Still checking whether this device is signed in (a split second)
+  if (!_authChecked) {
+    app.innerHTML = '';
+    return;
+  }
+  // Saved data on this device but not signed in: ask for a one-time sign-in
+  if (STATE.needsSignIn) {
+    app.innerHTML = renderSignInGate();
     return;
   }
   if (STATE.onboardStep !== undefined && STATE.onboardStep !== null && STATE.onboardStep < 6) {
@@ -1022,7 +1018,6 @@ function renderNav() {
 }
 
 function setTab(t) { STATE.tab = t; render(); }
-function markAsPaid(plan) { STATE.user.plan = plan; STATE.tab = 'account'; save(); render(); }
 
 function renderTab() {
   if (STATE.tab === 'home') return renderHome();
@@ -1505,10 +1500,6 @@ function renderUpgrade() {
         ${p.isPaid?`<a class="btn-primary" style="margin-top:1rem;display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="${p.name==='Annual'?'https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00':'https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01'}">Get ${p.name} →</a>`:'<button class="btn-ghost" style="margin-top:1rem;opacity:.5;cursor:default">Current plan</button>'}
       </div>`).join('')}
     <p class="hint" style="margin-top:.5rem">Secure payment via Stripe · Cancel anytime · 7-day refund guarantee</p>
-    <p class="hint" style="display:none;margin-top:1.5rem;border-top:1px solid var(--border3);padding-top:1rem">Already paid before today? (one-time fix)
-      <span onclick="markAsPaid('monthly')" style="color:var(--green-text);cursor:pointer;text-decoration:underline">Monthly</span> ·
-      <span onclick="markAsPaid('annual')" style="color:var(--green-text);cursor:pointer;text-decoration:underline">Annual</span>
-    </p>
   `;
 }
 
@@ -1747,6 +1738,68 @@ async function sendMagicLink(email) {
   }
 }
 
+// ── SIGN-IN BY CODE ──
+// Works inside the installed iPhone app, where tapping an email link opens
+// Safari instead. The email carries a 6-digit code to type in here.
+function escHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function codeBoxHtml(prefix) {
+  return `<div style="margin-top:14px;text-align:center">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Type the code from the email</div>
+    <div style="display:flex;gap:8px">
+      <input class="lp-field" id="${prefix}Code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456" style="margin-bottom:0;flex:1;text-align:center;letter-spacing:4px"/>
+      <button onclick="submitCode('${prefix}')" style="background:var(--green-bg);color:var(--green-text);border:1px solid var(--green);border-radius:var(--rsm);padding:12px 14px;font-size:13px;font-weight:500;cursor:pointer">Verify</button>
+    </div>
+    <div id="${prefix}CodeMsg" style="font-size:12px;margin-top:6px;color:var(--text3)"></div>
+  </div>`;
+}
+async function submitCode(prefix) {
+  const email = window._signInEmail;
+  const input = document.getElementById(prefix + 'Code');
+  const msg = document.getElementById(prefix + 'CodeMsg');
+  const token = (input ? input.value : '').replace(/\s+/g, '');
+  if (!email || token.length < 6) { if (msg) msg.textContent = 'Enter the code from your email.'; return; }
+  if (msg) msg.textContent = 'Checking...';
+  try {
+    let res = await _supabase.auth.verifyOtp({ email: email, token: token, type: 'email' });
+    if (res.error) res = await _supabase.auth.verifyOtp({ email: email, token: token, type: 'signup' });
+    if (res.error) { if (msg) msg.textContent = "That code didn't work. Check it, or request a new one."; return; }
+    if (msg) msg.textContent = '✓ Signed in';
+    location.reload();
+  } catch(e) {
+    if (msg) msg.textContent = 'Something went wrong. Please try again.';
+  }
+}
+
+// Screen shown to anyone whose device has saved data but is not signed in yet
+function renderSignInGate() {
+  const email = STATE.user && STATE.user.email ? STATE.user.email : '';
+  return `<div style="max-width:420px;margin:0 auto;padding:3.5rem 1.5rem;text-align:center">
+    <div style="font-size:42px;margin-bottom:12px">🔐</div>
+    <div class="serif" style="font-size:26px;margin-bottom:8px">Quick sign-in</div>
+    <p style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:1.25rem">We've made sign-in more secure. Confirm it's you once and everything carries on as normal.</p>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:12px">${escHtml(email)}</div>
+    <button class="lp-cta" id="gateBtn" onclick="gateSend()">Email me a sign-in code</button>
+    <div id="gateMsg" style="font-size:12px;margin-top:8px;color:var(--text3)"></div>
+    <div id="gateCodeArea"></div>
+  </div>`;
+}
+async function gateSend() {
+  const email = STATE.user && STATE.user.email;
+  const btn = document.getElementById('gateBtn');
+  const msg = document.getElementById('gateMsg');
+  if (!email) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+  const sent = await sendMagicLink(email);
+  if (btn) { btn.disabled = false; btn.textContent = 'Send again'; }
+  if (!sent) { if (msg) msg.textContent = 'Could not send the email. Please wait a minute and try again.'; return; }
+  if (msg) msg.textContent = '✓ Check your email for the code.';
+  window._signInEmail = email;
+  const area = document.getElementById('gateCodeArea');
+  if (area && !document.getElementById('gtCode')) area.innerHTML = codeBoxHtml('gt');
+}
+
 // Checks, on every page load, whether someone has a valid verified session
 // (e.g. they just clicked their magic link). Returns the verified email,
 // or null if nobody's currently signed in via real auth yet.
@@ -1763,6 +1816,8 @@ async function getVerifiedEmail() {
 async function syncToSupabase() {
   if (!STATE.user || !STATE.user.email) return;
   try {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (!session) return; // not signed in: nothing is sent to the database
     // Preserve any "notified" flags the server has already set, so a normal
     // save (typing, ticking a habit, etc.) doesn't silently wipe them out
     // and cause a task reminder to fire twice.
@@ -1795,7 +1850,6 @@ async function syncToSupabase() {
       .upsert({
         email: STATE.user.email,
         name: STATE.user.name,
-        plan: STATE.user.plan || 'free',
         tasks: JSON.stringify(tasksToSave),
         today_tasks: JSON.stringify(todayTasksToSave),
         habits: JSON.stringify(STATE.habits),
@@ -1806,7 +1860,6 @@ async function syncToSupabase() {
         toggles: JSON.stringify(STATE.toggles),
         last_date: STATE.lastDate,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        trial_start: STATE.trialStart || undefined,
         updated_at: new Date().toISOString()
       }, { onConflict: 'email' });
     if (error) console.log('Sync error:', error.message);
@@ -1853,14 +1906,16 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function savePushSubscription(subscription) {
-  const email = STATE.user?.email || localStorage.getItem('tst_last_email');
-  if (!email) { console.log('No email found for push subscription'); return; }
   try {
-    const res = await fetch(`https://nyumfsrwrfnasvkgjulv.supabase.co/rest/v1/push_subscriptions?on_conflict=email`, {      method: 'POST',
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (!session || !session.user || !session.user.email) { console.log('Not signed in: push subscription not saved'); return; }
+    const email = session.user.email;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=email`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + session.access_token,
         'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify({ email, subscription: JSON.stringify(subscription) })
@@ -1992,6 +2047,12 @@ silentPushRefresh();
 (async () => {
   // First: check if they just clicked a magic link (real verified session)
   const verifiedEmail = await getVerifiedEmail();
+  // Signed in as a different person than the data saved on this device: start clean
+  if (verifiedEmail && STATE.user && STATE.user.email && STATE.user.email.toLowerCase() !== verifiedEmail.toLowerCase()) {
+    Object.keys(localStorage).filter(k => k.indexOf('tst_') === 0 && k !== 'tst_pending_name').forEach(k => localStorage.removeItem(k));
+    location.reload();
+    return;
+  }
   if (verifiedEmail && !STATE.user) {
     const pendingName = localStorage.getItem('tst_pending_name');
     const restored = await loadFromSupabase(verifiedEmail);
@@ -2008,14 +2069,11 @@ silentPushRefresh();
     save();
   }
 
-  // Fallback: existing local-storage-based restore for already-logged-in devices
-  const lastEmail = localStorage.getItem('tst_last_email');
-  if (!STATE.user && lastEmail) {
-    const restored = await loadFromSupabase(lastEmail);
-    if (restored) { STATE.onboardStep = 6; save(); }
-  }
+  // Saved data on this device but no sign-in: show the one-time sign-in screen
+  STATE.needsSignIn = !!(STATE.user && STATE.user.email && !verifiedEmail && navigator.onLine !== false);
+  _authChecked = true;
   render();
-})();
+})().catch(e => { console.log('Start-up error:', e); _authChecked = true; render(); });
 // If returning user, check Supabase for plan and trial start date
 if (STATE.user && STATE.user.email) {
   (async () => {
