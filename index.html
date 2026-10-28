@@ -553,7 +553,7 @@ function renderLanding() {
         <div class="lp-pf">✓ Task time reminders</div>
         <div class="lp-pf">✓ Weekly scores & stats</div>
         <div class="lp-pf">✓ Push reminders</div>
-        <a class="lp-pbtn primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00">Get annual →</a>
+        <a class="lp-pbtn primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/3cIaEPfJOdpAal4fU95wI03">Get annual →</a>
       </div>
       <div class="lp-pc">
         <div class="lp-ptier">Monthly</div>
@@ -561,7 +561,7 @@ function renderLanding() {
         <div class="lp-pdesc">Full access. Cancel any time, no questions asked.</div>
         <div class="lp-pf">✓ Everything in annual</div>
         <div class="lp-pf">✓ Cancel any time</div>
-        <a class="lp-pbtn" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01">Get monthly</a>
+        <a class="lp-pbtn" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/14A4grfJO71c0Ku7nD5wI02">Get monthly</a>
       </div>
     </div>
     <div class="lp-section" style="text-align:center;border-bottom:1px solid var(--border)">
@@ -884,13 +884,13 @@ function renderTrialEnded() {
         <div class="pricing-tier">Annual</div>
         <div class="pricing-price">£39.99<small> / year</small></div>
         <div class="pricing-desc">Less than £3.50 a month. Everything unlocked.</div>
-        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00">Get Annual →</a>
+        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/3cIaEPfJOdpAal4fU95wI03">Get Annual →</a>
       </div>
       <div class="pricing-card">
         <div class="pricing-tier">Monthly</div>
         <div class="pricing-price">£4.99<small> / month</small></div>
         <div class="pricing-desc">Full access. Cancel any time.</div>
-        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01">Get Monthly</a>
+        <a class="btn-primary" style="display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="https://buy.stripe.com/14A4grfJO71c0Ku7nD5wI02">Get Monthly</a>
       </div>
       <p class="hint" style="margin-top:.75rem">Pay with the same email you signed up with${STATE.user && STATE.user.email ? ' (' + STATE.user.email + ')' : ''}, so we can unlock your account.</p>
     </div>
@@ -1470,7 +1470,7 @@ function renderUpgrade() {
         <div class="pricing-features">
           ${p.features.map(f=>`<div class="p-feature p-yes">${f}</div>`).join('')}${p.limits&&p.limits.length?`${p.limits.map(l=>`<div class="p-feature p-no">${l}</div>`).join('')}`:''}
         </div>
-        ${p.isPaid?`<a class="btn-primary" style="margin-top:1rem;display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="${p.name==='Annual'?'https://buy.stripe.com/3cI8wH69e5X82SC9vL5wI00':'https://buy.stripe.com/28EdR1apu3P0ctc4br5wI01'}">Get ${p.name} →</a>`:'<button class="btn-ghost" style="margin-top:1rem;opacity:.5;cursor:default">Current plan</button>'}
+        ${p.isPaid?`<a class="btn-primary" style="margin-top:1rem;display:block;text-decoration:none;text-align:center;box-sizing:border-box" href="${p.name==='Annual'?'https://buy.stripe.com/3cIaEPfJOdpAal4fU95wI03':'https://buy.stripe.com/14A4grfJO71c0Ku7nD5wI02'}">Get ${p.name} →</a>`:'<button class="btn-ghost" style="margin-top:1rem;opacity:.5;cursor:default">Current plan</button>'}
       </div>`).join('')}
     <p class="hint" style="margin-top:.5rem">Secure payment via Stripe · Cancel anytime · 7-day refund guarantee</p>
   `;
