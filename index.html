@@ -529,33 +529,6 @@ function renderLanding() {
       <div class="lp-step"><div class="lp-snum">3</div><div><div class="lp-st">Track your habits alongside</div><div class="lp-ss">Steps, water, sleep, calories — whatever matters to you. Your weekly score shows you the truth.</div></div></div>
       <div class="lp-step"><div class="lp-snum">4</div><div><div class="lp-st">Build your streak. Don't break the chain.</div><div class="lp-ss">Every completed day marks your goal calendar. Watch the chain grow. That chain becomes the motivation.</div></div></div>
     </div>
-    <div class="lp-section">
-      <div class="lp-title">What people are saying</div>
-      <div class="lp-quote">
-        <div class="lp-stars">★★★★★</div>
-        <div class="lp-qt">"I've tried every productivity app going. This is the first one I've actually stuck with. The evening routine changed everything for me."</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <div style="width:32px;height:32px;border-radius:50%;background:#1D9E75;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white;flex-shrink:0">SM</div>
-          <div class="lp-qa">Sarah M. · Glasgow</div>
-        </div>
-      </div>
-      <div class="lp-quote">
-        <div class="lp-stars">★★★★★</div>
-        <div class="lp-qt">"Lost 8kg in 3 months. Not because of a diet — because I finally stayed accountable to myself every single day."</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <div style="width:32px;height:32px;border-radius:50%;background:#4F7EF7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white;flex-shrink:0">JT</div>
-          <div class="lp-qa">James T. · Manchester</div>
-        </div>
-      </div>
-      <div class="lp-quote">
-        <div class="lp-stars">★★★★★</div>
-        <div class="lp-qt">"The streak system is addictive in the best possible way. I genuinely don't want to break it."</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <div style="width:32px;height:32px;border-radius:50%;background:#9B6EF3;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:white;flex-shrink:0">PK</div>
-          <div class="lp-qa">Priya K. · London</div>
-        </div>
-      </div>
-    </div>
     </div>
     <div class="lp-section">
       <div class="lp-title">Simple, honest pricing.</div>
@@ -603,8 +576,8 @@ function renderLanding() {
       <div class="lp-fbrand">Tomorrow Starts Tonight</div>
       <div class="lp-fsub">Your personal power diary.<br/>Be accountable to yourself — every single day.</div>
       <div class="lp-flinks">
-        <span class="lp-flink">Privacy</span>
-        <span class="lp-flink">Terms</span>
+        <a class="lp-flink" href="/privacy.html" style="text-decoration:none;color:inherit">Privacy</a>
+        <a class="lp-flink" href="/terms.html" style="text-decoration:none;color:inherit">Terms</a>
         <span class="lp-flink">hello@tomorrowstartstonight.co.uk</span>
       </div>
     </div>
@@ -649,16 +622,17 @@ async function restoreAccountSecure() {
   if (btn) btn.disabled = !(n && n.length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
 function lpSubmit2() {
+  // The bottom sign-up form uses the same secure email sign-in as the top one
   const name = document.getElementById('lpName2')?.value.trim();
   const email = document.getElementById('lpEmail2')?.value.trim();
   if (!name || !email) return;
-  if (!STATE.user) STATE.user = {};
-  STATE.user.name = name;
-  STATE.user.email = email;
-  STATE.user.plan = 'free';
-  STATE.onboardStep = 5;
-  save();
-  setTimeout(() => { render(); }, 500);
+  const n1 = document.getElementById('lpName');
+  const e1 = document.getElementById('lpEmail');
+  if (n1) n1.value = name;
+  if (e1) e1.value = email;
+  const cap = document.querySelector('.lp-capture');
+  if (cap) cap.scrollIntoView({ behavior: 'smooth' });
+  lpSubmit();
 }
 async function lpSubmit() {
   try {
