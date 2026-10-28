@@ -2,7 +2,9 @@
 // Listens for Stripe payment events and updates the user's plan in Supabase.
 
 const SUPABASE_URL = 'https://nyumfsrwrfnasvkgjulv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8';
+// Private server key (bypasses the database lock). Falls back to the public key
+// only so nothing breaks before the new key is deployed.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8';
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -36,6 +38,7 @@ async function verifyStripeSignature(rawBody, sigHeader, secret) {
 
 async function updateSupabasePlan(email, plan, name) {
   if (!email) return;
+  email = String(email).trim().toLowerCase(); // sign-in emails are stored lowercase
   const res = await fetch(`${SUPABASE_URL}/rest/v1/user_data?email=eq.${encodeURIComponent(email)}`, {
     method: 'PATCH',
     headers: {
