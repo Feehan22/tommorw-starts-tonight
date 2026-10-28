@@ -99,7 +99,16 @@ export default async function handler(req, res) {
     switch (event.type) {
       // Fired when a checkout completes (first payment)
       case 'checkout.session.completed': {
-        const email = obj.customer_details?.email || obj.customer_email;
+        // Prefer the email our app attached to the payment link (works even when they
+        // pay with Apple Pay, which uses a different email). Fall back to Stripe's email.
+        let email = obj.customer_details?.email || obj.customer_email;
+        if (obj.client_reference_id) {
+          try {
+            const b64 = String(obj.client_reference_id).replace(/-/g, '+').replace(/_/g, '/');
+            const decoded = Buffer.from(b64, 'base64').toString('utf8');
+            if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(decoded)) email = decoded;
+          } catch (e) {}
+        }
         const amountTotal = obj.amount_total; // in pence
         const plan = amountTotal >= 3000 ? 'annual' : 'monthly';
         await updateSupabasePlan(email, plan, obj.customer_details?.name);
