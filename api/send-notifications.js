@@ -1,7 +1,7 @@
 // api/send-notifications.js
 // Vercel serverless function — called by cron job every minute
 //
-// v7: uses the private service key. v6: skips expired free trials. v5: every task now carries a "forDate" (the day it is meant for). The
+// v8: respects each person's reminder on/off switches. v7: uses the private service key. v6: skips expired free trials. v5: every task now carries a "forDate" (the day it is meant for). The
 // server only sends a task reminder when forDate is TODAY in the user's
 // timezone, so reminders never fire on the wrong day and expire on their
 // own once the day is over. Tasks saved before this change have no
@@ -53,6 +53,15 @@ async function supabaseUpdateColumn(email, column, valueArray) {
     },
     body: JSON.stringify({ [column]: JSON.stringify(valueArray) })
   });
+}
+
+// The person's reminder switches: [task reminders, evening nudge, streak nudge].
+// Anything missing or unreadable counts as ON.
+function switchOn(user, index) {
+  try {
+    const t = JSON.parse(user.toggles || '[]');
+    return !Array.isArray(t) || t[index] !== false;
+  } catch (e) { return true; }
 }
 
 function getLocalTime(date, timezone) {
@@ -141,13 +150,12 @@ export default async function handler(req, res) {
     const now = new Date();
 
     const subs = await supabaseGet('push_subscriptions?select=email,subscription');
-    if (!Array.isArray(subs)) throw new Error('Could not load subscriptions: ' + JSON.stringify(subs));
     if (!subs || !subs.length) {
       res.status(200).json({ sent: 0, message: 'No subscriptions' });
       return;
     }
 
-    const users = await supabaseGet('user_data?select=email,tasks,today_tasks,last_date,timezone,plan,trial_start');
+    const users = await supabaseGet('user_data?select=email,tasks,today_tasks,last_date,timezone,plan,trial_start,toggles');
     if (!Array.isArray(users)) throw new Error('Could not load user data');
 
     let sent = 0;
@@ -164,21 +172,22 @@ export default async function handler(req, res) {
       const todayStr = getLocalDate(now, user.timezone);
 
       // ── Check "Tonight" plan ──
-      const tonightResult = await checkTaskList(user.tasks, currentTime, todayStr, sub.subscription, sub.email, results);
+      const wantsTaskReminders = switchOn(user, 0);
+      const tonightResult = !wantsTaskReminders ? { list: null, changed: false, sent: 0 } : await checkTaskList(user.tasks, currentTime, todayStr, sub.subscription, sub.email, results);
       sent += tonightResult.sent;
       if (tonightResult.changed) {
         await supabaseUpdateColumn(user.email, 'tasks', tonightResult.list);
       }
 
       // ── Check "Today" live list ──
-      const todayResult = await checkTaskList(user.today_tasks, currentTime, todayStr, sub.subscription, sub.email, results);
+      const todayResult = !wantsTaskReminders ? { list: null, changed: false, sent: 0 } : await checkTaskList(user.today_tasks, currentTime, todayStr, sub.subscription, sub.email, results);
       sent += todayResult.sent;
       if (todayResult.changed) {
         await supabaseUpdateColumn(user.email, 'today_tasks', todayResult.list);
       }
 
       // ── 9pm evening nudge (meant to repeat daily for everyone) ──
-      if (currentTime === '21:00') {
+      if (currentTime === '21:00' && switchOn(user, 1)) {
         const status = await sendPush(sub.subscription, 'Tomorrow starts tonight 🌙', "Set your Top 3 for tomorrow before bed. 60 seconds. Make it count.");
         results.push({ email: sub.email, type: 'evening_nudge', status });
         if (status < 300) sent++;
@@ -189,7 +198,7 @@ export default async function handler(req, res) {
         const lastDate = user.last_date;
         if (lastDate) {
           const diffDays = Math.floor((now - new Date(lastDate)) / (1000 * 60 * 60 * 24));
-          if (diffDays >= 2 && currentTime === '18:00') {
+          if (diffDays >= 2 && currentTime === '18:00' && switchOn(user, 2)) {
             const status = await sendPush(sub.subscription, "Your streak is waiting 🔥", `It's been ${diffDays} days. Don't let tomorrow slip by — check in tonight.`);
             results.push({ email: sub.email, type: 're_engagement', status });
             if (status < 300) sent++;
