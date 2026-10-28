@@ -1,7 +1,7 @@
 // api/send-notifications.js
 // Vercel serverless function — called by cron job every minute
 //
-// v5: every task now carries a "forDate" (the day it is meant for). The
+// v7: uses the private service key. v6: skips expired free trials. v5: every task now carries a "forDate" (the day it is meant for). The
 // server only sends a task reminder when forDate is TODAY in the user's
 // timezone, so reminders never fire on the wrong day and expire on their
 // own once the day is over. Tasks saved before this change have no
@@ -13,7 +13,9 @@
 const webpush = require('web-push');
 
 const SUPABASE_URL = 'https://nyumfsrwrfnasvkgjulv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8';
+// Private server key (bypasses the database lock). Falls back to the public key
+// only so nothing breaks before the new key is deployed.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dW1mc3J3cmZuYXN2a2dqdWx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDYyOTgsImV4cCI6MjA5NjUyMjI5OH0.sW1FjOEhtZEnOIgmYDF2gd60u2aTUZs9fvK5N-1D1S8';
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = 'mailto:hello@tomorrowstartstonight.co.uk';
