@@ -141,6 +141,7 @@ export default async function handler(req, res) {
     const now = new Date();
 
     const subs = await supabaseGet('push_subscriptions?select=email,subscription');
+    if (!Array.isArray(subs)) throw new Error('Could not load subscriptions: ' + JSON.stringify(subs));
     if (!subs || !subs.length) {
       res.status(200).json({ sent: 0, message: 'No subscriptions' });
       return;
