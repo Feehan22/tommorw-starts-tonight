@@ -621,7 +621,46 @@ async function restoreAccountSecure() {
   const btn = document.getElementById('lpCtaBtn2');
   if (btn) btn.disabled = !(n && n.length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }
+// ── iPHONE: INSTALL FIRST ──
+// On an iPhone, the Home Screen app and Safari are two separate copies of the app
+// that do not share a sign-in. Reminders only work from the Home Screen app.
+// So on an iPhone in Safari we ask people to add it to the Home Screen BEFORE signing up.
+function isIOSDevice() {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isInstalledApp() {
+  return window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function isIOSBrowserTab() { return isIOSDevice() && !isInstalledApp(); }
+function showInstallFirst() {
+  const ua = navigator.userAgent || '';
+  const notSafari = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  const old = document.getElementById('installFirst');
+  if (old) old.remove();
+  const box = document.createElement('div');
+  box.id = 'installFirst';
+  box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg,#0a0a0a);overflow-y:auto;-webkit-overflow-scrolling:touch';
+  box.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:3rem 1.5rem 2rem;text-align:center">
+    <div style="font-size:42px;margin-bottom:12px">📲</div>
+    <div class="serif" style="font-size:26px;margin-bottom:8px">First, add it to your Home Screen</div>
+    <p style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:1.25rem">On iPhone, reminders only work from the Home Screen app. So add it first, then sign up from there. It takes 20 seconds.</p>
+    ${notSafari ? '<p style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:1rem"><b>Open this page in Safari first.</b> Copy the web address and paste it into Safari.</p>' : ''}
+    <div style="text-align:left;background:var(--surface,#141414);border:1px solid var(--border,#2a2a2a);border-radius:14px;padding:16px 18px;font-size:14px;line-height:1.7;color:var(--text,#eee)">
+      <div><b>1.</b> Tap the <b>Share</b> button (the square with an arrow) at the bottom of Safari.</div>
+      <div><b>2.</b> Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</div>
+      <div><b>3.</b> Close Safari, then open <b>Tomorrow Starts Tonight</b> from your Home Screen.</div>
+      <div><b>4.</b> Sign up there. Your details and reminders are saved in that app.</div>
+    </div>
+    <p style="color:var(--text3);font-size:12px;line-height:1.6;margin-top:1rem">Don't sign up in Safari. It won't carry over to the Home Screen app.</p>
+    <button onclick="document.getElementById('installFirst').remove()" style="margin-top:1rem;background:none;border:none;color:var(--text3);font-size:13px;text-decoration:underline;cursor:pointer">Back</button>
+  </div>`;
+  document.body.appendChild(box);
+  window.scrollTo(0, 0);
+}
 function lpSubmit2() {
+  if (isIOSBrowserTab()) { showInstallFirst(); return; }
   // The bottom sign-up form uses the same secure email sign-in as the top one
   const name = document.getElementById('lpName2')?.value.trim();
   const email = document.getElementById('lpEmail2')?.value.trim();
@@ -635,6 +674,7 @@ function lpSubmit2() {
   lpSubmit();
 }
 async function lpSubmit() {
+  if (isIOSBrowserTab()) { showInstallFirst(); return; }
   try {
     const nameEl = document.getElementById('lpName');
     const emailEl = document.getElementById('lpEmail');
