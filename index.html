@@ -35,7 +35,7 @@
   --sans:'DM Sans',system-ui,sans-serif;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
-#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
 
 /* ── TOPBAR ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.2rem .75rem;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -1966,36 +1966,27 @@ async function silentPushRefresh() {
     alert("Notifications not supported. Make sure you opened this from your Home Screen icon, not Safari browser.");
     return;
   }
-  alert('Step 1: Notification API found. Permission status: ' + Notification.permission);
   Notification.requestPermission().then(async perm => {
     _notifPermission = perm;
     localStorage.setItem('tst_notifAsked', 'true');
-    alert('Step 2: Permission result: ' + perm);
     if (perm === 'granted' && 'serviceWorker' in navigator) {
       try {
-        alert('Step 3: Waiting for service worker...');
         const reg = await navigator.serviceWorker.ready;
-        alert('Step 4: SW ready. Checking existing subscription...');
         const existing = await reg.pushManager.getSubscription();
-        alert('Step 5: Existing sub: ' + (existing ? 'YES' : 'NO'));
         if (existing) {
           await savePushSubscription(existing);
-          alert('Step 6: Saved existing subscription!');
         } else {
-          alert('Step 6: Subscribing with VAPID key...');
           const sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY_CLIENT)
           });
-          alert('Step 7: Got subscription! Saving...');
           await savePushSubscription(sub);
-          alert('Step 8: Done! Check Supabase now.');
         }
       } catch(e) {
-        alert('ERROR: ' + e.message + ' | ' + e.name);
+        console.log('Notification setup error: ' + e.message);
       }
     } else {
-      alert('Skipping: perm=' + perm + ' SW=' + ('serviceWorker' in navigator));
+      console.log('Notification setup skipped: perm=' + perm);
     }
     render();
   });
